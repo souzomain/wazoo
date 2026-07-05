@@ -1,5 +1,6 @@
 import zlib
 import hashlib
+from functools import cached_property
 from random import randint
 from typing import Literal
 from Crypto.Util.Padding import pad
@@ -41,7 +42,8 @@ class DecodedMessage:
     def get_event(self) -> bytes:
         return self.m_event
 
-    def is_valid_checksum(self):
+    @cached_property
+    def is_valid_checksum(self) -> bool:
         return hashlib.md5(self.m_body).hexdigest() == self.m_checksum
 
     def is_control_message(
@@ -102,7 +104,7 @@ class WazuhHelper:
         include_id: bool = False,
         tcp_len_frame=True,
     ) -> bytes:
-        tmp = ("%05d%010d:%04d:" % (randint(1, 65535), 0, 0)).encode() + event
+        tmp = (b"%05d0000000000:0000:" % randint(1, 65535)) + event
         body = hashlib.md5(tmp).hexdigest().encode() + tmp
         comp = WazuhHelper.compress(body)
         comp_size = len(comp) + 1

@@ -167,7 +167,7 @@ class WazuhServer:
         agent: WazuhAgent, aes_data: bytes
     ) -> tuple[DecodedMessage, bool]:
         msg = WazuhHelper.decodeSecMessage(agent, aes_data)
-        return msg, msg.is_valid_checksum()
+        return msg, msg.is_valid_checksum
 
     async def handle_log_message(
         self, msg: DecodedMessage, agent: WazuhAgent

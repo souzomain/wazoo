@@ -1,4 +1,5 @@
 # Python-generated files
+*.log
 __pycache__/
 *.py[oc]
 build/
@@ -11,3 +12,4 @@ ssl/*
 tmp/
 agents.db
 app.log
+*.keys

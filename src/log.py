@@ -12,6 +12,7 @@ class WazooLogHandler:
         self.params: List[Parameters] = []
         self.prefix = prefix
         self._prefix = prefix.encode()
+        self._suffix = b"" if not add_new_line else b"\n"
         self.new_line = add_new_line
 
     def configure(self, data: Any):
@@ -44,11 +45,7 @@ class WazooLogHandler:
         await self._sendLog(self._prefix + log + (b"\n" if self.new_line else b""))
 
     async def sendLogBatch(self, logs: deque[bytes]):
-        suffix = b'\n' if self.new_line else b''
-        log = b''.join(
-            self._prefix + log + suffix
-            for log in logs
-        )
+        log = b"".join(self._prefix + log + self._suffix for log in logs)
         await self._sendLog(log)
 
     async def _sendLog(self, log: bytes):

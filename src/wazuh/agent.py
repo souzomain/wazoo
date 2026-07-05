@@ -1,3 +1,5 @@
+import hashlib
+from functools import cached_property
 from pathlib import Path
 from sqlmodel import Field, SQLModel, Session, create_engine, select
 
@@ -9,6 +11,10 @@ class WazuhAgent(SQLModel, table=True):
     key: bytes
     name: str
     version: str
+
+    @cached_property
+    def aes_key(self) -> bytes:
+        return hashlib.md5(self.key).hexdigest().encode()
 
 
 class WazuhAgentRepository:

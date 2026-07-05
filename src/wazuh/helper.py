@@ -1,6 +1,5 @@
 import zlib
 import hashlib
-from functools import lru_cache
 from random import randint
 from typing import Literal
 from Crypto.Util.Padding import pad
@@ -24,7 +23,7 @@ class DecodedMessage:
         self.original_buffer = decompressed_buffer
         self.m_checksum = decompressed_buffer[:32].decode()
         self.m_body = decompressed_buffer[32:]
-        splitted_buffer = decompressed_buffer[32:].split(b":", maxsplit=2)
+        splitted_buffer = self.m_body.split(b":", maxsplit=2)
         if len(splitted_buffer) != 3:
             raise ValueError("Malformed secure message (wrong key or corruption?)")
         if len(splitted_buffer[0]) != 15:
@@ -62,20 +61,13 @@ class WazuhHelper:
         return agent_id, aes_data
 
     @staticmethod
-    @lru_cache(maxsize=None)
-    def _derive_aes_key(key: bytes) -> bytes:
-        return hashlib.md5(key).hexdigest().encode()
-
-    @staticmethod
     def _decode(agent: WazuhAgent, msg: bytes) -> bytes:
-        aes_key = WazuhHelper._derive_aes_key(agent.key)
-        cipher = AES.new(aes_key, AES.MODE_CBC, iv=hardcoded_wazuh_iv)
+        cipher = AES.new(agent.aes_key, AES.MODE_CBC, iv=hardcoded_wazuh_iv)
         return cipher.decrypt(msg)
 
     @staticmethod
     def _encode(agent: WazuhAgent, msg: bytes) -> bytes:
-        aes_key = WazuhHelper._derive_aes_key(agent.key)
-        cipher = AES.new(aes_key, AES.MODE_CBC, iv=hardcoded_wazuh_iv)
+        cipher = AES.new(agent.aes_key, AES.MODE_CBC, iv=hardcoded_wazuh_iv)
         return cipher.encrypt(msg)
 
     @staticmethod
@@ -84,11 +76,9 @@ class WazuhHelper:
         msg: bytes,
         action: Literal["decode", "encode"] = "decode",
     ) -> bytes:
-        match action:
-            case "decode":
-                return WazuhHelper._decode(agent, msg)
-            case "encode":
-                return WazuhHelper._encode(agent, msg)
+        if action == "decode":
+            return WazuhHelper._decode(agent, msg)
+        return WazuhHelper._encode(agent, msg)
 
     @staticmethod
     def decompress(msg: bytes) -> bytes:

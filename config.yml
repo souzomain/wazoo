@@ -1,0 +1,8 @@
+log:
+  option: file
+  path: wazoo.log
+buffer:
+  time_flush: 1 # fush before 1 sec
+  line_flush: -1 # does not have a limit
+processes: 1
+workers: -1 # will use os.cpu_count()

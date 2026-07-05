@@ -1,0 +1,21 @@
+services:
+  wazuh-agent:
+    image: wazuh/wazuh-manager:4.14.5
+    hostname: wazuh.manager
+    restart: always
+    environment:
+      API_USERNAME: "wazuh-api"
+      API_PASSWORD: "S1eMCret#Pa2ssworD"
+      INDEXER_URL: http://_
+      FILEBEAT_SSL_VERIFICATION_MODE: "none"
+    volumes:
+      - filebeat_var:/var/lib/filebeat
+      - filebeat_etc:/etc/filebeat
+      - ./config/ossec.conf:/var/ossec/etc/ossec.conf:ro
+      # - ./config/ossec.conf:/wazuh-config-mount/etc/ossec.conf
+    ports:
+      - 1515:1515
+      - 1514:1514
+volumes:
+  filebeat_var:
+  filebeat_etc:

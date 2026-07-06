@@ -75,11 +75,52 @@ static unsigned char *iv = (unsigned char *)"FEDCBA0987654321";
 
 ![Wazuh hardcoded AES IV](./wazuh-hardcoded-aes-iv.png)
 
-Before received all package, we can get the agent "Id" and the encrypted AES data.
+Before decrypting, we need two things out of the package: **who** sent it and
+**what** to decrypt. The agent frames every message like this:
 
-With the agent ID we can retrieve the "Agent Key" from the database.
+```
+!<agent id>!#AES:<encrypted data>
+```
 
-The agent key is not the AES key, but the MD5 of the agent key.
+So we scan for the two `!` markers to pull the agent id, then everything after
+the `#AES:` tag is the ciphertext:
+
+```python
+def parseMessageHeader(msg: bytes) -> tuple[int, bytes]:
+    """Parse `!<id>!#AES:<data>` in a single pass, returning (agent_id, aes_data)."""
+    _start = msg.find(b"!")
+    _end = msg.find(b"!", _start + 1)
+    agent_id = int(msg[_start + 1 : _end])
+    aes_data = msg[_end + 1 + _aes_id_len :]  # _aes_id_len == len(b"#AES:")
+    return agent_id, aes_data
+```
+
+With the agent id we look up the "Agent Key" we saved back during the `1515`
+enrollment. But that key is **not** the AES key directly. Wazuh derives the AES
+key by taking the MD5 of the agent key, and — this is the part that trips
+everyone up — it uses the **hex digest string** (32 ASCII chars), not the raw 16
+MD5 bytes. That 32 byte string is exactly an AES-256 key:
+
+```python
+@cached_property
+def aes_key(self) -> bytes:
+    return hashlib.md5(self.key).hexdigest().encode()  # 32 chars -> AES-256 key
+```
+
+Now we have everything: the ciphertext, the key, the mode (CBC) and the
+hardcoded IV. Decrypting is just one call:
+
+```python
+hardcoded_wazuh_iv = b"FEDCBA0987654321"
+
+def _decode(agent: WazuhAgent, msg: bytes) -> bytes:
+    cipher = AES.new(agent.aes_key, AES.MODE_CBC, iv=hardcoded_wazuh_iv)
+    return cipher.decrypt(msg)
+```
+
+If the key is right, the bytes that come out are the `!` padding followed by the
+zlib compressed body. If the key is wrong, we get garbage that fails to
+decompress — a nice cheap way to reject a bad agent before doing any more work.
 
 3. Padding + Compressed Data
 

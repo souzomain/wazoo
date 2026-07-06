@@ -57,23 +57,27 @@ Following the wazuh message format, we can get a lot of interesting information 
 
 This image from wazuh talk exactly why we need to do.
 
-1. Get package lenght
+1. Get package length
 
-Wazuh agent send in the first 4 bytes the package lenght.
+Wazuh agent send in the first 4 bytes the package length.
+
+![First 4 bytes carrying the little-endian package length](./package-length.png)
 
 2. Decrypt AES
 
 First of all, take a look in the AES IV of the agent. [AES IV](https://github.com/wazuh/wazuh/blob/v4.14.6/src/os_crypto/aes/aes_op.c#L26)
 
-This hardcoded "iv", allow wazuh agent to encrypt their communication with any wazuh server over the interenet.
+This hardcoded "iv", allow wazuh agent to encrypt their communication with any wazuh server over the internet.
 
 ```c
 static unsigned char *iv = (unsigned char *)"FEDCBA0987654321";
 ```
 
+![Wazuh hardcoded AES IV](./wazuh-hardcoded-aes-iv.png)
+
 Before received all package, we can get the agent "Id" and the encrypted AES data.
 
-With the agent ID we can retreive the "Agent Key" from the database.
+With the agent ID we can retrieve the "Agent Key" from the database.
 
 The agent key is not the AES key, but the MD5 of the agent key.
 
@@ -83,8 +87,104 @@ Before decrypt the AES package, we can see the padding and the rest is the compr
 
 Let's remove all "!" of the message and decompress with zlib.
 
-4. 
+![The `!` padding before the zlib compressed data, and the result after decompressing](./padding-and-decompress.png)
 
-Let's send the same response we get from server to wazuh agent, and see what they will send on 1514.
+4. Read the decoded message
 
+After decompressing, we finally get the plain message. It is not just the
+event, it has a small header glued in front of it:
 
+```
+<md5 checksum (32 bytes)><rand+global (15 bytes)>:<local (4 bytes)>:<event>
+```
+
+![Decoded message layout, each field highlighted over a real dump](./decoded-message-layout.png)
+
+- **checksum**: the first 32 bytes are the MD5 of everything after it (the
+  "body"). If our own MD5 of the body matches this value, the message is valid
+  and was encrypted with the right key. If it doesn't match, we probably have
+  the wrong agent key, so we drop the connection.
+- **rand + global**: 5 random bytes followed by a 10 digit global counter.
+- **local**: a 4 digit per-agent counter.
+- **event**: everything else. This is the part we actually care about.
+
+In code this is exactly the `DecodedMessage` parser: split the body on `:` and
+validate `md5(body) == checksum`.
+
+## Control messages vs logs
+
+Now that we can read the event, we notice there are two kinds of messages.
+
+If the event starts with `#!-` (Wazuh calls it the "start header"), it is a
+**control message**, not a log. Following the
+[rc.h](https://github.com/wazuh/wazuh/blob/v4.14.5/src/headers/rc.h) header we
+can map them:
+
+```
+#!-agent startup    -> the agent just came online
+#!-agent shutdown   -> the agent is going offline
+#!-agent ack        -> acknowledgement (this is what the server answers)
+```
+
+![A control message starting with the `#!-` start header](./control-message.png)
+
+Anything that does **not** start with `#!-` is a real event coming from the
+agent's logcollector (a log line, a FIM event, syscollector data, etc). Those
+are the messages we want to forward somewhere useful.
+
+![A plain logcollector event, without the `#!-` start header](./log-message.png)
+
+So the server logic is simple:
+
+- got a control message? answer with an `ACK` so the agent knows we are alive.
+- got a log? forward the event and keep reading.
+
+## Answering the agent (the ACK)
+
+To reply we just do the whole encryption flow backwards. Given the event we want
+to send (for a keepalive that is `#!-agent ack `), we:
+
+1. build the body `md5(msg) + msg`
+2. compress it with zlib
+3. pad it with `!` bytes until the length is a multiple of the AES block size
+4. AES-CBC encrypt it with the same hardcoded IV and the agent key
+5. prefix it with `#AES:`
+6. and finally prepend the 4 byte little-endian length frame, the same framing
+   the agent used with us
+
+That is precisely what `WazuhHelper.encodeSecMessage` does. Once the agent
+receives our `ACK`, the handshake is complete and it keeps sending its logs and
+periodic keepalives over the same 1514 connection.
+
+## Putting it all together
+
+The full life of an agent, from the server point of view, looks like this:
+
+```
+agent  --( OSSEC A:'...' V:'...' )-->  server        (1515, over TLS)
+agent  <--( OSSEC K:'001 ...' )--------  server        register + client.keys
+agent  --( #!-agent startup  )-------->  server        (1514)
+agent  <--( #!-agent ack  )------------  server        ACK
+agent  --( log event )--------------->  server        forwarded to a sink
+agent  <--( #!-agent ack  )------------  server        keepalive loop...
+```
+
+And that is it. By only looking at the bytes on the wire and the few public
+Wazuh headers, we replicated enough of the manager protocol to enroll agents,
+decrypt their messages and answer them, without running the real Wazuh server.
+
+# Profit
+
+I turned all of this into a small library called **wazoo**, so you can run your
+own drop-in Wazuh manager in a few lines of Python.
+
+![wazoo running and a real Wazuh agent registering and connecting](./wazoo-running.png)
+
+Check the repo at
+[github.com/souzomain/wazoo](https://github.com/souzomain/wazoo) to spin up your
+own server, forward the decoded events over TCP/UDP/Unix/file, and enroll real
+Wazuh agents against it.
+
+Thanks for reading!
+
+— souzo

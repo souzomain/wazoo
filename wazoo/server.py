@@ -190,7 +190,13 @@ class WazuhServer:
         packet_size = int.from_bytes(data, "little")
         if packet_size == 0 or packet_size > 10 * 1024 * 1024:
             return None
-        return await reader.readexactly(packet_size)
+        payload = await reader.readexactly(packet_size)
+        logger.debug(
+            "Package length header: %s -> %d bytes",
+            data,
+            packet_size,
+        )
+        return payload
 
     def handle_control_message(
         self, msg: DecodedMessage, agent: WazuhAgent
@@ -245,6 +251,11 @@ class WazuhServer:
                     break
 
                 agent_id, aes_data = WazuhHelper.parseMessageHeader(payload)
+                logger.debug(
+                    "Parsed header. agent_id=%s | AES data %d bytes",
+                    agent_id,
+                    len(aes_data),
+                )
                 agent = self.getAgentId(agent_id)
 
                 if agent is None:
@@ -257,6 +268,16 @@ class WazuhServer:
                     )
                 else:
                     msg, checksum_ok = self._decode_and_validate(agent, aes_data)
+
+                logger.debug(
+                    "Decoded message. checksum=%s (valid=%s) rand=%s global=%s local=%s | event=%s",
+                    msg.m_checksum,
+                    checksum_ok,
+                    msg.m_rand,
+                    msg.m_global,
+                    msg.m_local,
+                    msg.m_event,
+                )
 
                 if not checksum_ok:
                     logger.error(

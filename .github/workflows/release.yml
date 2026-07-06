@@ -99,13 +99,6 @@ jobs:
            dist/*.tar.gz
            dist/*.sha256
 
-  compile:
-    needs: release
-    uses: ./.github/workflows/compile.yml
-    with:
-      version: ${{ needs.release.outputs.version }}
-    secrets: inherit
-
   pypi:
     needs: release
     uses: ./.github/workflows/pypi.yml
@@ -117,3 +110,10 @@ jobs:
     uses: ./.github/workflows/container.yml
     with:
       version: ${{ needs.release.outputs.version }}
+
+  compile:
+    needs: release
+    uses: ./.github/workflows/compile.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    secrets: inherit

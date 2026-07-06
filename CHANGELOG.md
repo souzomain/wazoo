@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.2] - 2026-07-06
+
+### 🔧 Other changes
+
+- *(logging)* Better wazoo server logging by @souzomain
+
 ## [0.1.1] - 2026-07-06
 
 ### 🔧 Other changes

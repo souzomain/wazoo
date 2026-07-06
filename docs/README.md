@@ -2,7 +2,7 @@
 
 In this file I will guide you to use wazoo library correctly.
 
-- `blog/`. Original blog post about this project
+- [blog/](blog/). Original blog post about this project
 
 # Setup
 

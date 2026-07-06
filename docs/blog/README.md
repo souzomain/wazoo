@@ -139,8 +139,6 @@ event, it has a small header glued in front of it:
 <md5 checksum (32 bytes)><rand+global (15 bytes)>:<local (4 bytes)>:<event>
 ```
 
-![Decoded message layout, each field highlighted over a real dump](./decoded-message-layout.png)
-
 - **checksum**: the first 32 bytes are the MD5 of everything after it (the
   "body"). If our own MD5 of the body matches this value, the message is valid
   and was encrypted with the right key. If it doesn't match, we probably have

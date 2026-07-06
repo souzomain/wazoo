@@ -1,4 +1,4 @@
-![img/wazoo.png](Wazoo)
+![Wazoo](img/wazoo.png)
 
 # Wazoo 
 

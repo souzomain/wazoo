@@ -8,9 +8,13 @@
 
 Wazoo is a wazuh server that can handle wazuh agent connection and logging.
 
-**wazoo does not replace wazuh** but you can use to send logs to other platforms or make new integrations with wazuh.
+**wazoo does not replace wazuh**. wazoo does not decode logs, it only get logs from wazuh agent and decode the encrypted message. 
+
+You can use wazoo to send logs to other platforms or make new integrations with wazuh.
 
 I made wazoo to study the wazuh agent enrolment and I ended up getting excited and doing this project.
+
+**wazoo is a wazuh library and server**. wazoo can be used as a library for you python project, or you can use the wazoo server.
 
 With this project you can receive logs from wazuh agent and logging into a **TCP, UDP, Unix, TCP+SSL or File**
 
@@ -184,6 +188,12 @@ Now you can run the server
 ```sh
 uv run wazoo -v
 ```
+
+# Documentation
+
+You can see the library Documentation in `./docs/` directory.
+
+see [./docs/](Documentation)
 
 # Test
 

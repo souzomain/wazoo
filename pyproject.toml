@@ -3,15 +3,21 @@ name = "wazoo"
 version = "0.1.0"
 description = "Python Wazuh runtime server to handle agent registration and log receive"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "aiofiles>=25.1.0",
-    "nuitka[app]",
     "pycryptodome>=3.23.0",
     "pyyaml>=6.0.3",
     "sqlmodel>=0.0.39",
     "uvloop>=0.22.1",
 ]
+
+[project.scripts]
+wazoo = "wazoo.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [

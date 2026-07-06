@@ -2,7 +2,7 @@ import asyncio
 import aiofiles
 from collections import deque
 from typing import Any, List, Literal
-from utils import Parameters
+from .utils import Parameters
 
 
 class WazooLogHandler:

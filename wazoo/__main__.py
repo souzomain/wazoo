@@ -1,5 +1,4 @@
 import uvloop
-import config
 import argparse
 import atexit
 import logging
@@ -7,8 +6,9 @@ import multiprocessing
 import os
 import signal
 import sys
-from server import WazuhServer
-from log import WazooLog
+from . import config
+from .server import WazuhServer
+from .log import WazooLog
 from pathlib import Path
 
 def getFileContentIfExists(file_path: str) -> str | None:

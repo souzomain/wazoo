@@ -4,13 +4,13 @@ import asyncio
 import os
 import re
 import ssl
-from wazuh.agent import WazuhAgent, WazuhAgentRepository
-from wazuh.helper import DecodedMessage, WazuhHelper
-from wazuh.enum import WazuhRcEventBytes
-from log import WazooLog
+from .wazuh.agent import WazuhAgent, WazuhAgentRepository
+from .wazuh.helper import DecodedMessage, WazuhHelper
+from .wazuh.enum import WazuhRcEventBytes
+from .log import WazooLog
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from buffer import BufferQueue
+from .buffer import BufferQueue
 
 logger = logging.getLogger()
 

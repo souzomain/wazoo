@@ -127,20 +127,27 @@ class WazuhServer:
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ):
         # OSSEC A:'wazuh-agent-souzo-arch' V:'v4.14.5' G:'default'\n
-        logger.debug("Connection received: registration server")
-        data = await reader.readline()
-        logger.debug("Wazuh data: %s", data)
-        parsed_message = self.parse_wazuh_registration_message(data.decode())
-        agent = self.add_new_agent(
-            parsed_message.get("A", ""), parsed_message.get("V", "")
-        )
-        self._append_client_keys_line(agent)
-        register_response = (
-            f"OSSEC K:'{agent.id:03d} {agent.name} any {agent.key.decode()}'".encode()
-        )
-        logger.debug("Registration response: %s", register_response)
-        writer.write(register_response)
-        writer.close()
+        addr = writer.get_extra_info('peername')
+        try:
+            logger.info(f"Connection received: registration server. {addr}")
+            data = await reader.readline()
+            logger.debug("Wazuh data: %s", data)
+            parsed_message = self.parse_wazuh_registration_message(data.decode())
+            agent = self.add_new_agent(
+                parsed_message.get("A", ""), parsed_message.get("V", "")
+            )
+            self._append_client_keys_line(agent)
+            register_response = (
+                f"OSSEC K:'{agent.id:03d} {agent.name} any {agent.key.decode()}'".encode()
+            )
+            logger.debug("Registration response: %s", register_response)
+            writer.write(register_response)
+            logger.info(f'New agent registered: {agent.id}:{agent.name}')
+        except Exception as ex:
+            logger.error(f'Exception at connection callback. {str(ex)}')
+        finally:
+            logger.info(f'Closing connection: {addr}')
+            writer.close()
 
     async def _read_frame(self, reader: asyncio.StreamReader):
         data = await reader.readexactly(4)
@@ -186,13 +193,16 @@ class WazuhServer:
     async def _l_connection_callback(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ):
-        logger.debug("Connection received: logging server")
+
+        addr = writer.get_extra_info('peername')
+        logger.info(f"Connection received: logging server {addr}")
+
         try:
             while True:
                 try:
                     payload = await self._read_frame(reader)
                 except asyncio.IncompleteReadError:
-                    logger.debug("Agent disconnected")
+                    logger.info(f"Agent disconnected {addr}")
                     break
                 if not payload:
                     logger.error("Invalid wazuh message")
@@ -227,6 +237,7 @@ class WazuhServer:
                     writer.write(ret)
                     await writer.drain()
         finally:
+            logger.info(f'Connection closed: {addr}')
             writer.close()
 
     async def _start_registration_server(self):

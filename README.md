@@ -2,9 +2,7 @@
   <img src="img/wazoo.png" alt="Wazoo" width="300">
 </p>
 
-<h1 align="center">Wazoo</h1>
-
-This project is a wazuh server **4.X** that can handle wazuh agent connection.
+<p align="center">Wazoo. Wazuh server 4.x made in python</p>
 
 ## What is Wazoo
 

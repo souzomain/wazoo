@@ -13,3 +13,4 @@ tmp/
 agents.db
 app.log
 *.keys
+authd.pass

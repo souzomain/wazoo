@@ -24,7 +24,7 @@ class WazuhServer:
         port_registration: int = 1515,
         port_logging: int = 1514,
         password: str | None = None,
-        client_keys: str|None = None,
+        client_keys: str | None = None,
         ssl_path: Path = Path("./ssl"),
         version: str = "4.14.5",
         manager_name: str = "manager",
@@ -38,13 +38,13 @@ class WazuhServer:
         if workers and workers <= 0:
             workers = os.cpu_count()
         if not client_keys or len(client_keys) == 0:
-            client_keys = 'client.keys'
+            client_keys = "client.keys"
 
         self.host = host
         self.port_registration = port_registration
         self.port_logging = port_logging
         self.reuse_port = reuse_port
-        self.password = password
+        self.password = None if not password else password.strip()
         self.client_keys = Path(client_keys)
         self.log = log
         self.ssl_path = ssl_path
@@ -77,6 +77,11 @@ class WazuhServer:
                     version=version,
                 )
             )
+
+        if self.password:
+            logger.info('Server configured with password')
+            logger.debug(f'Password: {self.password}')
+
 
     def getAgentId(self, id: int):
         return self.agents.get(id)
@@ -115,38 +120,69 @@ class WazuhServer:
         with self.client_keys.open("a") as f:
             f.write(line)
 
-    def parse_wazuh_registration_message(self, text: str):
+    def parse_wazuh_registration_message(self, text: str) -> dict:
         text = text.strip()
+        password = None
+        pass_match = re.search(r"PASS:\s*(\S+)\s*", text)
+        if pass_match:
+            password = pass_match.group(1)
 
         message_id, rest = text.split(maxsplit=1)
+        result = {
+            "message_id": message_id,
+            **dict(re.findall(r"(\w+):'([^']*)'", rest)),
+        }
 
-        return {"message_id": message_id, **dict(re.findall(r"(\w+):'([^']*)'", rest))}
+        if password:
+            result["password"] = password
+        return result
 
     # register connection server 1515
     async def _r_connection_callback(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ):
         # OSSEC A:'wazuh-agent-souzo-arch' V:'v4.14.5' G:'default'\n
-        addr = writer.get_extra_info('peername')
+        addr = writer.get_extra_info("peername")
         try:
             logger.info(f"Connection received: registration server. {addr}")
             data = await reader.readline()
             logger.debug("Wazuh data: %s", data)
             parsed_message = self.parse_wazuh_registration_message(data.decode())
+            logger.debug(f"agent parsed message: {parsed_message}")
+
+            if not {"A", "V"}.issubset(parsed_message):
+                raise ValueError(f"Invalid wazuh agent message from addr {addr}")
+
+            pwd = parsed_message.get("password", None)
+
+            if self.password and len(self.password) > 0:
+                if not pwd:
+                    raise ValueError(f"wazuh agent without password: {addr}")
+
+                if not self.password == pwd:
+                    raise ValueError(f"Invalid wazuh agent password: {addr}")
+
+            elif pwd is not None:
+                raise ValueError(f'wazuh agent trying to register with password but the server is not configured with one: {addr}')
+
             agent = self.add_new_agent(
                 parsed_message.get("A", ""), parsed_message.get("V", "")
             )
+
             self._append_client_keys_line(agent)
-            register_response = (
-                f"OSSEC K:'{agent.id:03d} {agent.name} any {agent.key.decode()}'".encode()
-            )
+
+            register_response = f"OSSEC K:'{agent.id:03d} {agent.name} any {agent.key.decode()}'".encode()
+
             logger.debug("Registration response: %s", register_response)
+
             writer.write(register_response)
-            logger.info(f'New agent registered: {agent.id}:{agent.name}')
+
+            logger.info(f"New agent registered: {agent.id}:{agent.name}")
+
         except Exception as ex:
-            logger.error(f'Exception at connection callback. {str(ex)}')
+            logger.error(f"Exception at connection callback. {str(ex)}")
         finally:
-            logger.info(f'Closing connection: {addr}')
+            logger.info(f"Closing connection: {addr}")
             writer.close()
 
     async def _read_frame(self, reader: asyncio.StreamReader):
@@ -194,7 +230,7 @@ class WazuhServer:
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ):
 
-        addr = writer.get_extra_info('peername')
+        addr = writer.get_extra_info("peername")
         logger.info(f"Connection received: logging server {addr}")
 
         try:
@@ -237,11 +273,13 @@ class WazuhServer:
                     writer.write(ret)
                     await writer.drain()
         finally:
-            logger.info(f'Connection closed: {addr}')
+            logger.info(f"Connection closed: {addr}")
             writer.close()
 
     async def _start_registration_server(self):
-        logging.debug(f"Starting registration server. host: {self.host}. port: {self.port_registration}. reuse port: {self.reuse_port}")
+        logging.debug(
+            f"Starting registration server. host: {self.host}. port: {self.port_registration}. reuse port: {self.reuse_port}"
+        )
         return await asyncio.start_server(
             self._r_connection_callback,
             self.host,
@@ -251,7 +289,9 @@ class WazuhServer:
         )
 
     async def _start_logging_server(self):
-        logging.debug(f"Starting logging server. host: {self.host}. port: {self.port_logging}. reuse port: {self.reuse_port}")
+        logging.debug(
+            f"Starting logging server. host: {self.host}. port: {self.port_logging}. reuse port: {self.reuse_port}"
+        )
         return await asyncio.start_server(
             self._l_connection_callback,
             self.host,
@@ -264,7 +304,9 @@ class WazuhServer:
         self.ssl = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         self.ssl.load_cert_chain(self.ssl_cert, self.ssl_key)
 
-        logger.info(f'Starting thread pool for message decoding. workers: {self.workers}')
+        logger.info(
+            f"Starting thread pool for message decoding. workers: {self.workers}"
+        )
         # AES/zlib/md5 release the GIL, so threads give real parallelism here.
         self._executor = ThreadPoolExecutor(
             max_workers=self.workers, thread_name_prefix="decode"

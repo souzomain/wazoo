@@ -4,4 +4,5 @@ services:
     restart: always
     environment:
       - WAZUH_MANAGER_SERVER=127.0.0.1
+      - WAZUH_REGISTRATION_PASSWORD=MySuperS3cr3t
     network_mode: host

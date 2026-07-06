@@ -132,8 +132,8 @@ If you want me to continue developing this project, please consider to give a St
 # Contact
 
 If you want to contact me, you can use this options.
-**E-mail**: me@souzo.me
-**Matrix**: @souzo:matrix.org
-**Linkedin**: https://www.linkedin.com/in/vinicius-m-a76ba51b5/
-**Twitter/X**: https://x.com/souzomain
-**Reddit**: https://www.reddit.com/user/_souzo/
+- **E-mail**: me@souzo.me
+- **Matrix**: @souzo:matrix.org
+- **Linkedin**: https://www.linkedin.com/in/vinicius-m-a76ba51b5/
+- **Twitter/X**: https://x.com/souzomain
+- **Reddit**: https://www.reddit.com/user/_souzo/

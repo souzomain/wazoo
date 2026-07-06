@@ -193,7 +193,7 @@ uv run wazoo -v
 
 You can see the library Documentation in `./docs/` directory.
 
-see [./docs/](Documentation)
+see [Documentation](./docs/)
 
 # Test
 

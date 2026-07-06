@@ -149,15 +149,7 @@ The `releases/latest/download/...` URL always resolves to the newest release, so
 
 # Performance
 
-This python wazuh server, is not performant than wazuh server but can 
-
-- **asyncio** ( for async connection );
-- **uvloop** ( for better asyncio performance );
-- **MultiProcessing** ( multiples processes using same port );
-- **Thread poll workers** ( use thread to decode large events >4kb );
-- **pre-compiled binaries** ( to compile the project, nuitka do some performance optimizations ).
-
-Python is not good for performance but with this architecture We managed to turn it into something with high performance.
+Python is not good for performance but I made some design decisions to tune and improve this server with high performance.
 
 - **uvloop**: Uses libuv (C library used in nodejs) under the hood, this increases the speed of all async tasks;
 - **asyncio**: The project has used asyncio from the start;
@@ -165,7 +157,7 @@ Python is not good for performance but with this architecture We managed to turn
 - **workers**: Workers for log decoding are default. by default it uses all cpus core;
 - **multiprocessing**: By default I added 1 process to handle the connections, but you can increase with the option `--processes`;
 - **nuitka**: Compile the project and generate a performant binarie.
-- **Log buffering**: All logs received are stored in the buffer queue. buffer queue is flushed when `max_time` is reached or the number of logs in queue reach `max_lines`.
+- **log buffering queue**: All logs received are stored in the buffer queue. buffer queue is flushed when `max_time` is reached or the number of logs in queue reach `max_lines`.
 
 ## Setup development environment
 

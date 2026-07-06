@@ -16,6 +16,13 @@ With this project you can receive logs from wazuh agent and logging into a **TCP
 
 You can run this project using: *docker*, *uv* or *pre-compiled binaries*
 
+## Run with docker
+
+TO run wazoo with docker, you can use the ghcr.io (github) docker repository 
+```
+docker run -p 1515:1515 -p 1514:1514 ghcr.io/souzomain/wazoo:latest
+```
+
 ## Run with uv
 
 Install **uv**:

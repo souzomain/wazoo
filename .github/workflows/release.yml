@@ -104,12 +104,14 @@ jobs:
     uses: ./.github/workflows/pypi.yml
     with:
       version: ${{ needs.release.outputs.version }}
+    secrets: inherit
 
   container:
     needs: release
     uses: ./.github/workflows/container.yml
     with:
       version: ${{ needs.release.outputs.version }}
+    secrets: inherit
 
   compile:
     needs: release

@@ -1,4 +1,6 @@
-![Wazoo](img/wazoo.png)
+<p align="center">
+  <img src="img/wazoo.png" alt="Wazoo" width="300">
+</p>
 
 # Wazoo 
 

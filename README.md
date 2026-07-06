@@ -2,7 +2,7 @@
   <img src="img/wazoo.png" alt="Wazoo" width="300">
 </p>
 
-# Wazoo 
+<h1 align="center">Wazoo</h1>
 
 This project is a wazuh server **4.X** that can handle wazuh agent connection.
 

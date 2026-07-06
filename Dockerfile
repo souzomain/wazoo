@@ -11,7 +11,7 @@ RUN uv python install 3.14
 WORKDIR /app
 COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync 
+    uv sync --frozen --no-dev
 
 FROM debian:bookworm-slim AS runtime
 LABEL org.opencontainers.image.source https://github.com/souzomain/wazoo

@@ -18,6 +18,7 @@ jobs:
     outputs:
       version: ${{ steps.check.outputs.version }}
 
+    steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
@@ -52,13 +53,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8.3.0
 
       - name: Install dev dependencies (includes git-cliff)
         run: uv sync --only-dev
@@ -88,7 +89,7 @@ jobs:
           path: dist/
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ needs.check.outputs.version }}
           name: ${{ needs.check.outputs.version }}
@@ -104,3 +105,15 @@ jobs:
     with:
       version: ${{ needs.release.outputs.version }}
     secrets: inherit
+
+  pypi:
+    needs: release
+    uses: ./.github/workflows/pypi.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+
+  container:
+    needs: release
+    uses: ./.github/workflows/container.yml
+    with:
+      version: ${{ needs.release.outputs.version }}

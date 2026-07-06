@@ -2,11 +2,18 @@ name: Compile binaries
  
 on:
   workflow_dispatch:
+    inputs:
       version:
         type: string
         description: 'Release version (x, y, z)'
         required: true
- 
+
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+
 jobs:
   build:
     strategy:
@@ -14,13 +21,20 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: wazoo-v${{ inputs.version }}-linux-x86_64
+            artifact_name: wazoo-${{ inputs.version }}-linux-x86_64
+            latest_name: wazoo-latest-linux-x86_64
+          - os: ubuntu-26.04-arm
+            artifact_name: wazoo-${{ inputs.version }}-linux-arm64
+            latest_name: wazoo-latest-linux-arm64
 
           # TODO: add this later
+          #- os: macos-latest
+          #  artifact_name: wazoo-${{ inputs.version }}-macos-arm64
+          #  latest_name: wazoo-latest-macos-arm64
+
           #- os: windows-latest
-          #  artifact_name: wazoo-v${{ inputs.version }}-windows-x86_64.exe
-          #- os: macos-latest # runner arm64 (Apple Silicon)
-          #  artifact_name: wazoo-v${{ inputs.version }}-macos-arm64
+          #  artifact_name: wazoo-${{ inputs.version }}-windows-x86_64.exe
+          #  latest_name: wazoo-latest-windows-x86_64.exe
 
     runs-on: ${{ matrix.os }}
 
@@ -38,7 +52,7 @@ jobs:
 
       - name: Install patchelf (Linux only)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y patchelf
+        run: sudo apt-get update && sudo apt-get install -y patchelf clang
 
       - name: Nuitka compile 
         run: >
@@ -50,10 +64,24 @@ jobs:
           --assume-yes-for-downloads
           --mode=onefile
           --lto=yes
-          src/wazoo.py
+          --jobs=4
+          --clang
+          --include-package=wazoo
+          wazoo/__main__.py
+
+      - name: Create "latest" alias (no recompile)
+        run: cp dist/${{ matrix.artifact_name }} dist/${{ matrix.latest_name }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact_name }}
           path: dist/${{ matrix.artifact_name }}
+
+      - name: Upload binary to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.version }}
+          files: |
+            dist/${{ matrix.artifact_name }}
+            dist/${{ matrix.latest_name }}

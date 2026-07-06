@@ -28,31 +28,11 @@ sed -i "s/^version = \"[^\"]*\"/version = \"$VERSION_NO_V\"/" pyproject.toml
 uv run git-cliff -c cliff.toml --unreleased --bump --prepend CHANGELOG.md
 uv run git-cliff -c cliff.toml --unreleased --bump  > NEXT_RELEASE.md
 
-BLOG_POST="docs/docs/blog/posts/changelog-$NEXT_VERSION.md"
-
-cat << EOF > $BLOG_POST
----
-authors: 
-    - souzo
-categories:
-    - announcement
-    - release
-tags:
-    - announcement
-    - release
-date: $(date +%Y-%m-%d)
----
-
-# Version $NEXT_VERSION changelog
-EOF
-
-cat NEXT_RELEASE.md >> $BLOG_POST
-
 # Build distribution
 uv build
 
 # Stage and commit
-git add pyproject.toml CHANGELOG.md $BLOG_POST
+git add pyproject.toml CHANGELOG.md
 git commit -m "chore(release): $VERSION_NO_V"
 
 # Create annotated tag

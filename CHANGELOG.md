@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.0] - 2026-07-06
+
+### 🚀 Features
+
+- Handle wazuh agent password registration by @souzomain
+
 ## [0.1.2] - 2026-07-06
 
 ### 🔧 Other changes

@@ -96,7 +96,7 @@ workers: -1 # will use os.cpu_count()
 
 This is an example with TCP output
 
-```
+```yml
 log:
   option: tcp
   ip: 127.0.0.1
@@ -108,7 +108,7 @@ log:
 
 This is an example with UDP output
 
-```
+```yml
 log:
   option: udp
   ip: 127.0.0.1
@@ -119,7 +119,7 @@ log:
 
 This is an example with Unix output
 
-```
+```yml
 log:
   option: unix
   path: /var/wazoo.sock

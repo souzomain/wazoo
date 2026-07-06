@@ -1,3 +1,5 @@
+![img/wazoo.png](Wazoo)
+
 # Wazoo 
 
 This project is a wazuh server **4.X** that can handle wazuh agent connection.

@@ -4,7 +4,7 @@ from typing import Type, Any
 @dataclass
 class Parameters:
     name: str
-    type: Type
+    type: Type | None
     required: bool
     help: str = ""
     default: Any | None = None

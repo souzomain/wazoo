@@ -16,7 +16,7 @@ I made wazoo to study the wazuh agent enrolment and I ended up getting excited a
 
 **wazoo is a wazuh library and server**. wazoo can be used as a library for you python project, or you can use the wazoo server.
 
-With this project you can receive logs from wazuh agent and logging into a **TCP, UDP, Unix, TCP+SSL or File**
+With this project you can receive logs from wazuh agent and logging into a **TCP, UDP, Unix, TCP+SSL, File or your own callback function**
 
 # Getting Started
 
@@ -128,6 +128,27 @@ log:
   option: unix
   path: /var/wazoo.sock
 ```
+
+### Callback Output (library only)
+
+The `callback` option hands every log to your own **async** function instead of
+a socket or file. A function can't be expressed in `config.yml`, so this option
+is only available when using wazoo as a library:
+
+```python
+from wazoo import WazooLog
+
+async def on_log(log: bytes):
+    print("received:", log)
+
+log = WazooLog({"callback": on_log}, option="callback")
+
+await log.connect()
+await log.sendLog(b"hello world")
+await log.close()
+```
+
+See [docs/README.md](docs/README.md#callback-output) for more details.
 
 # Pre-compiled binaries
 

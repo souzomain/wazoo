@@ -91,7 +91,8 @@ Main options:
 
 - class: `wazoo/log.py`
 
-This class you can send logs over TCP, UDP, Unix and File log.
+This class you can send logs over TCP, UDP, Unix, File log or to your own
+callback function.
 
 `WazooLog` is the output sink where the server forwards decoded agent events.
 Pick the transport with `option` and pass its parameters in `data`:
@@ -102,6 +103,7 @@ Pick the transport with `option` and pass its parameters in `data`:
 | `udp` | `ip`, `port` | Send logs over UDP |
 | `unix` | `path` | Write to a Unix domain socket (e.g. `/var/wazoo.sock`) |
 | `file` | `path` | Append logs to a file |
+| `callback` | `callback` | Hand each log to your own async function |
 
 ```python
 from wazoo import WazooLog
@@ -119,6 +121,30 @@ await log.close()
 
 `prefix` prepends a fixed string to every line and `add_new_line` (default
 `True`) controls whether each event ends with `\n`.
+
+### Callback output
+
+Use `option="callback"` to receive every log in your own **async** function
+instead of a socket or file. The `callback` param takes an awaitable that is
+invoked with the raw log bytes for `sendLog`, and with the `deque[bytes]` batch
+for `sendLogBatch`:
+
+```python
+from collections import deque
+from wazoo import WazooLog
+
+async def on_log(log: bytes | deque[bytes]):
+    print("received:", log)
+
+log = WazooLog({"callback": on_log}, option="callback")
+
+await log.connect()
+await log.sendLog(b"hello world")        # on_log(b"hello world\n")
+await log.close()
+```
+
+Unlike the socket transports, `callback` has no connection to open or close, so
+`connect()` and `close()` are effectively no-ops.
 
 ## Wazoo helper
 

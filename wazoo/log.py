@@ -1,7 +1,7 @@
 import asyncio
 import aiofiles
 from collections import deque
-from typing import Any, List, Literal
+from typing import Any, Awaitable, Callable, List, Literal
 from .utils import Parameters
 
 
@@ -51,6 +51,24 @@ class WazooLogHandler:
     async def _sendLog(self, log: bytes):
         raise NotImplementedError()
 
+
+class WazooCallbackHandler(WazooLogHandler):
+    callback: Callable[
+        [bytes | deque[bytes],],
+        Awaitable[None],
+    ]
+
+    def __init__(self, *args) -> None:
+        super().__init__(*args)
+        self.params.append(
+            Parameters(name="callback", type=None, required=True, help="function call")
+        )
+
+    async def _sendLog(self, log: bytes):
+        await self.callback(log)
+
+    async def sendLogBatch(self, logs: deque[bytes]):
+        await self.callback( logs )
 
 class WazooTcpHandler(WazooLogHandler):
     ip: str
@@ -172,12 +190,13 @@ class WazooLog:
         "udp": WazooUdpHandler,
         "unix": WazooUnixHandler,
         "file": WazooFileHandler,
+        "callback": WazooCallbackHandler,
     }
 
     def __init__(
         self,
         data: Any,
-        option: Literal["tcp", "udp", "unix", "file"],
+        option: Literal["tcp", "udp", "unix", "file", "callback"],
         add_new_line: bool = True,
         prefix: str = "",
     ) -> None:

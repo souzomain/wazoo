@@ -1,7 +1,7 @@
 [project]
 
 name = "wazoo"
-version = "0.2.0"
+version = "0.2.1"
 description = "Python Wazuh runtime server to handle agent registration and log receive"
 readme = "README.md"
 requires-python = ">=3.13"

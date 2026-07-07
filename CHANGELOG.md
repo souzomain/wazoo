@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1] - 2026-07-07
+
+### 🔧 Other changes
+
+- *(helper)* Change function that handle wazuh message from server to helper by @souzomain
+
 ## [0.2.0] - 2026-07-06
 
 ### 🚀 Features

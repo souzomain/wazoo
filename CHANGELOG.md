@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0] - 2026-07-07
+
+### 🚀 Features
+
+- Add callback handler to handle logs using an another function by @souzomain
+
 ## [0.2.1] - 2026-07-07
 
 ### 🔧 Other changes

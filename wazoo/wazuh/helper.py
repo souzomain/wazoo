@@ -1,5 +1,6 @@
 import zlib
 import hashlib
+import re
 from functools import cached_property
 from random import randint
 from typing import Literal
@@ -96,6 +97,24 @@ class WazuhHelper:
         decrypted = decrypted.lstrip(b"!")  # remove ! padding from start of the string
         decompressed_data = WazuhHelper.decompress(decrypted)
         return DecodedMessage(decompressed_data)
+
+    @staticmethod
+    def parse_wazuh_registration_message(text: str) -> dict:
+        text = text.strip()
+        password = None
+        pass_match = re.search(r"PASS:\s*(\S+)\s*", text)
+        if pass_match:
+            password = pass_match.group(1)
+
+        message_id, rest = text.split(maxsplit=1)
+        result = {
+            "message_id": message_id,
+            **dict(re.findall(r"(\w+):'([^']*)'", rest)),
+        }
+
+        if password:
+            result["password"] = password
+        return result
 
     @staticmethod
     def encodeSecMessage(

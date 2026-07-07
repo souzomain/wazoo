@@ -120,23 +120,6 @@ class WazuhServer:
         with self.client_keys.open("a") as f:
             f.write(line)
 
-    def parse_wazuh_registration_message(self, text: str) -> dict:
-        text = text.strip()
-        password = None
-        pass_match = re.search(r"PASS:\s*(\S+)\s*", text)
-        if pass_match:
-            password = pass_match.group(1)
-
-        message_id, rest = text.split(maxsplit=1)
-        result = {
-            "message_id": message_id,
-            **dict(re.findall(r"(\w+):'([^']*)'", rest)),
-        }
-
-        if password:
-            result["password"] = password
-        return result
-
     # register connection server 1515
     async def _r_connection_callback(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -147,7 +130,7 @@ class WazuhServer:
             logger.info(f"Connection received: registration server. {addr}")
             data = await reader.readline()
             logger.debug("Wazuh data: %s", data)
-            parsed_message = self.parse_wazuh_registration_message(data.decode())
+            parsed_message = WazuhHelper.parse_wazuh_registration_message(data.decode())
             logger.debug(f"agent parsed message: {parsed_message}")
 
             if not {"A", "V"}.issubset(parsed_message):

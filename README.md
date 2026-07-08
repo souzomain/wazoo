@@ -2,42 +2,66 @@
   <img src="img/wazoo.png" alt="Wazoo" width="300">
 </p>
 
-<p align="center">Wazoo. Wazuh server 4.x made in python</p>
+<p align="center">Wazoo. Wazuh framework in python</p>
 
 ## What is Wazoo
 
-Wazoo is a wazuh server that can handle wazuh agent connection and logging.
+Wazoo is a python wazuh framework and a wazuh server that can handle wazuh agent connection and logging.
 
-**wazoo does not replace wazuh**. wazoo does not decode logs, it only get logs from wazuh agent and decode the encrypted message. 
+**wazoo does not replace wazuh**. wazoo is a python framework to interact with wazuh protocol and have a server option, **it not decode logs like wazuh, only handle the wazuh protocol**. 
 
-You can use wazoo to send logs to other platforms or make new integrations with wazuh.
+Wazoo server only receive logs from wazuh agents and decode the encrypted message allowing you to extend wazuh functionality. 
 
-I made wazoo to study the wazuh agent enrolment and I ended up getting excited and doing this project.
+You can use wazoo to send logs to others platforms or make new integrations.
 
-**wazoo is a wazuh library and server**. wazoo can be used as a library for you python project, or you can use the wazoo server.
+I made wazoo to study the wazuh agent enrolment and I ended up getting excited and doing this framework and a server.
 
-With this project you can receive logs from wazuh agent and logging into a **TCP, UDP, Unix, TCP+SSL, File or your own callback function**
+**wazoo is a wazuh framework and server**. wazoo can be used as a library for you python project, or you can use the wazoo server to handle wazuh agent connections.
+
+You can use wazoo as a double-edge blade, **encrypt** and **decrypt** wazuh protocol.
+
+With wazoo server you can receive logs from wazuh agent and logging the events into a **TCP, UDP, Unix, TCP+SSL, File or your own callback function**
 
 # Getting Started
 
-You can run this project using: *docker*, *uv* or *pre-compiled binaries*
+## Framework
 
-## Run with docker
+You can download the framework using the **wazoo** pypi package.
+
+### Download with uv
+
+You can use uv to add wazoo as dependencie to your project.
+
+```sh
+uv add wazoo
+```
+
+### Download using pip
+
+Use pip to download the wazoo library.
+
+```sh
+pip install wazoo
+```
+
+## Wazoo server
+
+I made this wazuh server using the framework to show how wazuh handle wazuh agent connections. I made some options to handle wazuh agent logs and send over tcp, udp, file, unix, etc...
+
+The cli to run server is configured by default in `./wazoo/__main__.py`. You can use the `wazoo` tool to run the server.
+
+### Run with docker
+
+You can run this project using: *docker*, *uv* or *pre-compiled binaries*
 
 TO run wazoo with docker, you can use the ghcr.io (github) docker repository 
 ```
 docker run -p 1515:1515 -p 1514:1514 ghcr.io/souzomain/wazoo:latest
 ```
 
-## Run with uv
+### Run with uv
 
-Install **uv**:
-
-```sh
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-Sync the dependencies and run the server. `uv` installs the project into an isolated environment automatically, so no manual `pip install` is needed:
+Sync the dependencies and run the server. `uv` installs the project into an isolated environment automatically:
 
 ```sh
 uv sync
@@ -58,7 +82,7 @@ uv run wazoo --help
 
 > If you want to use TCP+SSL, create the certificates first — see [Setup development environment](#setup-development-environment).
 
-# Configuration
+### Server Configurations
 
 You can configure the file `./config.yml` to send logs over your preference. 
 
@@ -77,11 +101,11 @@ To run the configuration file, you need to pass the `-c` option.
 wazoo -c config.yml
 ```
 
-## Configuration example
+### Configurations example
 
 I will show you differents types of configurations.
 
-### File output
+#### File output
 
 This is an example with File output
 
@@ -96,7 +120,7 @@ processes: 1
 workers: -1 # will use os.cpu_count()
 ```
 
-### TCP Output
+#### TCP Output
 
 This is an example with TCP output
 
@@ -108,7 +132,7 @@ log:
   ssl: false
 ```
 
-### UDP Output
+#### UDP Output
 
 This is an example with UDP output
 
@@ -119,7 +143,7 @@ log:
   port: 514
 ```
 
-### Unix Output
+#### Unix Output
 
 This is an example with Unix output
 
@@ -129,28 +153,26 @@ log:
   path: /var/wazoo.sock
 ```
 
-### Callback Output (library only)
+#### Callback Output (library only)
 
-The `callback` option hands every log to your own **async** function instead of
-a socket or file. A function can't be expressed in `config.yml`, so this option
-is only available when using wazoo as a library:
+The `callback` option hands every log to your own **async** function instead of a socket or file. A function can't be expressed in `config.yml`, so this option is only available when using wazoo library:
 
 ```python
 from wazoo import WazooLog
 
-async def on_log(log: bytes):
+async def on_log(log: bytes | deque[bytes]):
     print("received:", log)
 
 log = WazooLog({"callback": on_log}, option="callback")
 
-await log.connect()
 await log.sendLog(b"hello world")
-await log.close()
 ```
 
 See [docs/README.md](docs/README.md#callback-output) for more details.
 
-# Pre-compiled binaries
+### Pre-compiled binaries
+
+If you want to use wazoo as a server, you can use the pre-compiled binaries.
 
 > I recommend to use pre-compiled binaries, binaries generated by nuitka will have more performance than running python
 
@@ -172,7 +194,7 @@ chmod +x wazoo
 
 The `releases/latest/download/...` URL always resolves to the newest release, so it is safe to script. For a reproducible install, pick a specific version from the [releases page](https://github.com/souzomain/wazoo/releases) instead (e.g. `wazoo-<version>-linux-x86_64`).
 
-# Performance
+### Performance
 
 Python is not good for performance but I made some design decisions to tune and improve this server with high performance.
 
